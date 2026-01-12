@@ -1,0 +1,64 @@
+{
+  "tickets": [
+    {
+      "id": "TICKET-101",
+      "summary": "Profile Picture Editing",
+      "status": "OPEN",
+      "type": "FEATURE",
+      "urgency": "low",
+      "linked_users": [
+        "@superuser"
+      ],
+      "created_at": 1767598965.4953115,
+      "notified": true
+    },
+    {
+      "id": "TICKET-102",
+      "summary": "Reddit Inquiry: What is the best lotion...",
+      "status": "IN_PROGRESS",
+      "type": "QUESTION",
+      "urgency": "medium",
+      "linked_users": [
+        "u_TranquilitySpaTreat"
+      ],
+      "created_at": 1767618306.1837122,
+      "notified": false
+    },
+    {
+      "id": "TICKET-103",
+      "summary": "App crashes on login - third time this week!",
+      "status": "OPEN",
+      "type": "BUG",
+      "urgency": "high",
+      "linked_users": [
+        "@frustrated_user"
+      ],
+      "created_at": 1768224900.9280965,
+      "notified": false
+    },
+    {
+      "id": "TICKET-104",
+      "summary": "Update broke everything - quality work as always",
+      "status": "OPEN",
+      "type": "BUG",
+      "urgency": "medium",
+      "linked_users": [
+        "@sarcastic_dev"
+      ],
+      "created_at": 1768224906.456894,
+      "notified": false
+    },
+    {
+      "id": "TICKET-105",
+      "summary": "Request: Add CSV export functionality",
+      "status": "OPEN",
+      "type": "FEATURE",
+      "urgency": "low",
+      "linked_users": [
+        "@feature_requester"
+      ],
+      "created_at": 1768224908.6848078,
+      "notified": false
+    }
+  ]
+}

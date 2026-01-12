@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: ./server/Dockerfile
+    container_name: loop-closer-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONPATH=/app/execution
+    restart: always
+
+  app:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: loop-closer-frontend
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./client/.env.local
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    restart: always
+    volumes:
+      - ./client/waitlist.csv:/app/waitlist.csv
