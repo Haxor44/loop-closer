@@ -147,4 +147,4 @@ Proprietary - All rights reserved
 
 ## Contact
 
-For API access or questions: [Your Email]
+For API access or questions: evolmalek04@gmail.com.
