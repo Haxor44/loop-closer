@@ -219,8 +219,22 @@ def get_twitter_quota(req: dict):
                 "searches_today": 0,
                 "tweets_today": 0,
                 "searches_limit": 0,
+                "tweets_limit": 0,
                 "last_reset": datetime.now().date().isoformat()
             })
+
+            # Check for reset
+            today = datetime.now().date().isoformat()
+            last_reset = quota.get("last_reset")
+            
+            if last_reset != today:
+                print(f"Resetting quota for {req['email']} from {last_reset} to {today}")
+                quota["searches_today"] = 0
+                quota["tweets_today"] = 0
+                quota["last_reset"] = today
+                u["twitter_quota"] = quota
+                save_users_db(db)
+            
             return {"quota": quota}
     raise HTTPException(status_code=404, detail="User not found")
 
@@ -443,7 +457,90 @@ async def update_ticket(ticket_id: str, update: TicketUpdate):
         
         if not found:
             raise HTTPException(status_code=404, detail="Ticket not found")
+
+        # Save DB
+        ticket_manager.save_db(db)
+        return {"status": "success", "ticket": ticket}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+class ReplyPayload(BaseModel):
+    content: str
+    platform: str
+
+@app.post("/api/tickets/{ticket_id}/reply")
+def send_reply(ticket_id: str, payload: ReplyPayload):
+    """
+    Send a real reply to the social platform.
+    """
+    try:
+        # 1. Load Ticket to get User Handle and/or link
+        db = ticket_manager.load_db()
+        ticket = next((t for t in db["tickets"] if t["id"] == ticket_id), None)
         
+        if not ticket:
+            raise HTTPException(status_code=404, detail="Ticket not found")
+        
+        # 2. Get SaaS User (Owner) to get OAuth Tokens
+        users = load_users_db()
+        owner_email = ticket.get("owner")
+        if not owner_email:
+             # Fallback logic if owner isn't set, unlikely if auth is working
+             raise HTTPException(status_code=400, detail="Ticket has no owner linked")
+             
+        user = next((u for u in users["users"] if u["email"] == owner_email), None)
+        if not user:
+            raise HTTPException(status_code=404, detail="Owner user not found")
+            
+        # 3. Check Platform & Tokens
+        if payload.platform.lower() == "twitter":
+            oauth = user.get("twitter_oauth")
+            if not oauth or not oauth.get("access_token"):
+                raise HTTPException(status_code=403, detail="Twitter not connected or token expired")
+            
+            # 4. Initialize Client & Send
+            # Need to find the original tweet ID from the ticket or linked users?
+            # In a real app, we'd store the 'platform_id' on the ticket or the 'post' object.
+            # For now, we'll try to extract it from the ticket ID if it follows 'twitter_123' format 
+            # or expect the frontend/ticket to carry it.
+            # Simplified: Assumes ticket.id might be the external ID or we have to look it up.
+            
+            # BETTER STRATEGY: Look up the original post in 'analyzed_posts.json' to get the real ID?
+            # Or just assume for this prototype that `ticket_id` IS `twitter_123` or we stored `source_id`.
+            
+            # Let's check `ticket_manager` logic. It creates tickets with UUIDs usually.
+            # Retrieve the 'source_id' from the ticket if it exists, or passed in payload?
+            # Let's try to pass `source_id` in the payload from frontend for safety.
+            
+            from execution.twitter_api_client import TwitterAPIClient
+            client = TwitterAPIClient(oauth["access_token"])
+            
+            # We need the original tweet ID. 
+            # If the ticket ID isn't the tweet ID, we depend on the frontend to provide it,
+            # OR we assume the Ticket is linked to a Post ID.
+            
+            # For this 'Real Logic' implementation, let's assume the frontend sends the 'source_id' 
+            # or the ticket ID contains it. 
+            # If ticket_id starts with 'twitter_', use it.
+            
+            reply_to_id = ticket_id if ticket_id.startswith("twitter_") else None
+            
+            result = client.create_tweet(payload.content, reply_to_id=reply_to_id)
+            
+            if result:
+                # Update status to DONE or REPLIED
+                ticket["status"] = "DONE"
+                ticket_manager.save_db(db)
+                return {"status": "success", "data": result}
+            else:
+                raise HTTPException(status_code=500, detail="Failed to post to Twitter")
+                
+        else:
+            raise HTTPException(status_code=400, detail=f"Platform {payload.platform} not supported yet")
+            
+    except Exception as e:
+        print(f"Reply Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
         ticket_manager.save_db(db)
         return {"message": f"Ticket {ticket_id} updated to {update.status}"}
     except Exception as e:

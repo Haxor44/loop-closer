@@ -30,7 +30,7 @@ const UrgencyBadge = ({ urgency }: { urgency?: string }) => {
     );
 };
 
-export default function TicketTable({ tickets, refresh }: { tickets: Ticket[], refresh: () => void }) {
+export default function TicketTable({ tickets, refresh, brandVoice }: { tickets: Ticket[], refresh: () => void, brandVoice?: string }) {
     const [selectedTicket, setSelectedTicket] = useState<{ id: string, content: string } | null>(null);
 
     const handleStatusUpdate = async (id: string, currentStatus: string) => {
@@ -128,6 +128,7 @@ export default function TicketTable({ tickets, refresh }: { tickets: Ticket[], r
                     onClose={() => setSelectedTicket(null)}
                     ticketId={selectedTicket.id}
                     ticketContent={selectedTicket.content}
+                    brandVoice={brandVoice}
                 />
             )}
         </div>

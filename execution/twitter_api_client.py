@@ -95,6 +95,47 @@ class TwitterAPIClient:
             print(f"❌ Error searching Twitter: {e}")
             return []
     
+    def create_tweet(self, text: str, reply_to_id: Optional[str] = None) -> Optional[Dict]:
+        """
+        Post a tweet (or reply) using the user's OAuth token.
+        
+        Args:
+            text: The content of the tweet.
+            reply_to_id: The ID of the tweet to reply to (optional).
+            
+        Returns:
+            The created tweet object from API, or None if failed.
+        """
+        url = f"{self.base_url}/tweets"
+        
+        headers = {
+            "Authorization": f"Bearer {self.access_token}",
+            "Content-Type": "application/json",
+            "User-Agent": "LoopCloser/1.0"
+        }
+        
+        payload = {"text": text}
+        
+        if reply_to_id:
+             # Clean up ID if it has prefix
+            clean_id = reply_to_id.replace("twitter_", "")
+            payload["reply"] = {"in_reply_to_tweet_id": clean_id}
+            
+        try:
+            print(f"🚀 Posting tweet: {payload}")
+            response = requests.post(url, headers=headers, json=payload, timeout=10)
+            
+            if response.status_code in [200, 201]:
+                print(f"✅ Tweet successfully posted!")
+                return response.json().get("data", {})
+            else:
+                print(f"❌ Failed to post tweet ({response.status_code}): {response.text}")
+                return None
+                
+        except Exception as e:
+            print(f"❌ Error posting tweet: {e}")
+            return None
+
     def test_connection(self) -> bool:
         """
         Test if the access token is valid.

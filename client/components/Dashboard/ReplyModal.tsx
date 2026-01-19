@@ -5,12 +5,14 @@ interface ReplyModalProps {
     onClose: () => void;
     ticketContent: string;
     ticketId: string;
+    brandVoice?: string;
 }
 
-export default function ReplyModal({ isOpen, onClose, ticketContent, ticketId }: ReplyModalProps) {
+export default function ReplyModal({ isOpen, onClose, ticketContent, ticketId, brandVoice }: ReplyModalProps) {
     const [reply, setReply] = useState("");
     const [loading, setLoading] = useState(false);
     const [context, setContext] = useState("");
+    const [generatedOnce, setGeneratedOnce] = useState(false);
 
     if (!isOpen) return null;
 
@@ -25,6 +27,7 @@ export default function ReplyModal({ isOpen, onClose, ticketContent, ticketId }:
             const data = await res.json();
             if (data.reply) {
                 setReply(data.reply);
+                setGeneratedOnce(true);
             }
         } catch (error) {
             console.error("Error generating reply:", error);
@@ -33,10 +36,38 @@ export default function ReplyModal({ isOpen, onClose, ticketContent, ticketId }:
         }
     };
 
-    const handleSend = () => {
-        // Mock send functionality
-        alert(`Reply sent for ticket ${ticketId}:\n${reply}`);
-        onClose();
+    // Auto-generate on open if brandVoice is available and haven't generated yet
+    if (!generatedOnce && !loading && !reply && brandVoice) {
+        // Using a timeout to avoid strict mode double-invoke issues in dev
+        setTimeout(() => generateReply(brandVoice), 100);
+        setGeneratedOnce(true);
+    }
+
+    const handleSend = async () => {
+        if (!reply) return;
+
+        try {
+            // Using "Twitter" hardcoded for now, or derive from ticketSource if available
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/tickets/${ticketId}/reply`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    content: reply,
+                    platform: "Twitter" // Ideally passed as prop
+                })
+            });
+
+            if (res.ok) {
+                alert(`Reply sent successfully!`);
+                onClose();
+            } else {
+                const err = await res.json();
+                alert(`Failed to send: ${err.detail || "Unknown error"}`);
+            }
+        } catch (error) {
+            console.error("Failed to send reply:", error);
+            alert("Error sending reply");
+        }
     };
 
     return (
@@ -50,9 +81,11 @@ export default function ReplyModal({ isOpen, onClose, ticketContent, ticketId }:
                 <div className="p-6 space-y-4">
                     {/* Quick Prompts */}
                     <div>
-                        <label className="text-xs font-semibold uppercase text-muted mb-2 block">Quick Prompts / Vibe</label>
+                        <label className="text-xs font-semibold uppercase text-muted mb-2 block">
+                            {brandVoice ? "Using Your Brand Voice (Click to override)" : "Select Tone / Vibe"}
+                        </label>
                         <div className="flex flex-wrap gap-2">
-                            {["Professional", "Empathic", "Direct", "Noir", "Vibrant", "Soft"].map((tone) => (
+                            {["Professional", "Empathetic", "Direct", "Noir", "Vibrant", "Soft"].map((tone) => (
                                 <button
                                     key={tone}
                                     onClick={() => generateReply(tone)}
@@ -83,11 +116,13 @@ export default function ReplyModal({ isOpen, onClose, ticketContent, ticketId }:
                             value={reply}
                             onChange={(e) => setReply(e.target.value)}
                             className="w-full h-32 bg-secondary/30 border border-border rounded-lg p-3 text-sm focus:ring-1 focus:ring-primary focus:border-primary resize-none"
-                            placeholder="AI generated reply will appear here..."
+                            placeholder={brandVoice ? "Generating suggested reply..." : "Select a tone to generate a reply..."}
                         />
                         {loading && (
                             <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm rounded-lg">
-                                <div className="text-xs font-bold animate-pulse text-primary">Generating...</div>
+                                <div className="text-xs font-bold animate-pulse text-primary">
+                                    {brandVoice ? "✨ Auto-generating suggestion..." : "✨ Generating reply..."}
+                                </div>
                             </div>
                         )}
                     </div>

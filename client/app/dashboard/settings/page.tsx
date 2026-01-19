@@ -448,17 +448,24 @@ function SettingsContent() {
                                 <div>
                                     <label className="block text-sm font-medium mb-1">Brand Voice (for AI replies)</label>
                                     <div className="flex flex-wrap gap-2 mb-2 mt-2">
-                                        {["Professional", "Empathetic", "Direct", "Noir", "Vibrant", "Soft"].map((tone) => (
+                                        {[
+                                            { label: "Professional", prompt: "Write a polite, formal, and solution-oriented response that maintains a corporate standard." },
+                                            { label: "Empathetic", prompt: "Respond with deep understanding and care, validating the user's feelings first." },
+                                            { label: "Direct", prompt: "Be concise and straight to the point. Focus purely on the solution without fluff." },
+                                            { label: "Noir", prompt: "Use a moody, premium, and slightly mysterious tone. Keep it cool and sophisticated." },
+                                            { label: "Vibrant", prompt: "Use high energy, emojis, and an enthusiastic tone. Make the user feel excited!" },
+                                            { label: "Soft", prompt: "Use gentle language, soft phrasing, and a very approachable, non-threatening tone." }
+                                        ].map((item) => (
                                             <button
-                                                key={tone}
+                                                key={item.label}
                                                 type="button"
-                                                onClick={() => setConfig(prev => ({ ...prev, brand_voice: tone }))}
-                                                className={`px-3 py-1 rounded-full text-xs transition-colors border ${config.brand_voice === tone
+                                                onClick={() => setConfig(prev => ({ ...prev, brand_voice: item.prompt }))}
+                                                className={`px-3 py-1 rounded-full text-xs transition-colors border ${config.brand_voice === item.prompt
                                                     ? "bg-primary text-white border-primary"
                                                     : "bg-secondary/50 hover:bg-primary/20 hover:text-primary border-border"
                                                     }`}
                                             >
-                                                {tone}
+                                                {item.label}
                                             </button>
                                         ))}
                                     </div>

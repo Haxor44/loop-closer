@@ -14,7 +14,7 @@ logging.basicConfig(
     ]
 )
 
-PIPELINE_SCRIPT = "execution/run_pipeline.py"
+PIPELINE_SCRIPT = "execution/run_user_pipeline.py"
 INTERVAL_SECONDS = 3600  # Run every hour
 
 def run_pipeline():

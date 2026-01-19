@@ -10,14 +10,9 @@ export default function DashboardPage() {
     const [tickets, setTickets] = useState<any[]>([]);
     const [stats, setStats] = useState({ total: 0, open: 0, done: 0 });
     const [loading, setLoading] = useState(true);
-    const { data: session, status } = useSession();
+    const [brandVoice, setBrandVoice] = useState("");
+    const { data: session } = useSession();
     const router = useRouter();
-
-    useEffect(() => {
-        if (status === "unauthenticated") {
-            router.push("/");
-        }
-    }, [status, router]);
 
     const fetchData = async () => {
         if (!session?.user?.email) return;
@@ -33,6 +28,19 @@ export default function DashboardPage() {
 
             setTickets(ticketsData);
             setStats(statsData);
+
+            // Fetch user config for brand voice
+            const userRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/sync`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: session.user.email }),
+                cache: "no-store"
+            });
+            const userData = await userRes.json();
+            if (userData.user?.config?.brand_voice) {
+                setBrandVoice(userData.user.config.brand_voice);
+            }
+
         } catch (error) {
             console.error("Error fetching dashboard data:", error);
         } finally {
@@ -45,14 +53,6 @@ export default function DashboardPage() {
             fetchData();
         }
     }, [session]);
-
-    if (status === "loading") {
-        return <div className="flex h-screen items-center justify-center">Loading...</div>;
-    }
-
-    if (status === "unauthenticated") {
-        return null; // Will redirect
-    }
 
     return (
         <div className="flex flex-col md:flex-row h-screen bg-background text-foreground overflow-hidden">
@@ -91,7 +91,7 @@ export default function DashboardPage() {
                         {loading ? (
                             <div className="p-12 text-center text-muted">Loading tickets...</div>
                         ) : (
-                            <TicketTable tickets={tickets} refresh={fetchData} />
+                            <TicketTable tickets={tickets} refresh={fetchData} brandVoice={brandVoice} />
                         )}
                     </div>
                 </div>
