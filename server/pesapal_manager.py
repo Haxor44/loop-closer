@@ -3,20 +3,23 @@ import json
 import uuid
 import time
 import logging
+import os
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("pesapal")
 
-# Configuration (In a real app, load from environment variables)
-PESAPAL_ENV = "sandbox" # sandbox or live
+# Configuration (loaded from environment variables)
+PESAPAL_ENV = os.getenv("PESAPAL_ENV", "sandbox")  # sandbox or live
 PESAPAL_SANDBOX_URL = "https://cybqa.pesapal.com/pesapalv3"
 PESAPAL_LIVE_URL = "https://pay.pesapal.com/v3"
 
-# TODO: Move to environment variables for production
-CONSUMER_KEY = "qkio1BGGYAXTu2JOfm7XSXNruoZsrqEW"
-CONSUMER_SECRET = "osGQ364R49cXKeOYSpaOnT++rHs="
-CALLBACK_URL = "http://localhost:8000/api/payment/callback"  # Update with ngrok/cloudflared URL
+# Load credentials from environment variables
+CONSUMER_KEY = os.getenv("PESAPAL_CONSUMER_KEY", "qkio1BGGYAXTu2JOfm7XSXNruoZsrqEW")
+CONSUMER_SECRET = os.getenv("PESAPAL_CONSUMER_SECRET", "osGQ364R49cXKeOYSpaOnT++rHs=")
+
+# Production callback URL points to API domain
+CALLBACK_URL = os.getenv("PESAPAL_CALLBACK_URL", "https://api.theloopcloser.com/api/payment/callback")
 
 class PesapalService:
     def __init__(self):
@@ -96,10 +99,15 @@ class PesapalService:
             logger.error(f"Failed to register IPN: {e}")
             return None
 
-    def submit_order(self, user_email, amount=20.00, currency="KES", description="Subscription Upgrade"):
+    def submit_order(self, user_email, amount=3770.00, currency="KES", description="Subscription Upgrade", 
+                     subscription_details=None, account_number=None):
         """
-        Submit order to Pesapal
+        Submit order to Pesapal with MANDATORY recurring payment details
         """
+        # Validate that recurring payment details are provided
+        if not subscription_details or not account_number:
+            raise ValueError("subscription_details and account_number are REQUIRED for recurring payments")
+        
         # Force Mock if using dummy credentials
         if CONSUMER_KEY == "your_consumer_key_here":
             logger.info("Using MOCK implementation due to missing credentials")
@@ -136,7 +144,10 @@ class PesapalService:
                 "email_address": user_email,
                 "country_code": "KE",
                 # Add dummy data if needed
-            }
+            },
+            # ALWAYS include recurring payment fields (MANDATORY)
+            "account_number": account_number,
+            "subscription_details": subscription_details
         }
 
         try:
@@ -185,8 +196,8 @@ class PesapalService:
 # Singleton or helper function
 _service = PesapalService()
 
-def create_pesapal_order(user_email, amount=20.00, currency="KES"):
-    return _service.submit_order(user_email, amount, currency)
+def create_pesapal_order(user_email, amount=3770.00, currency="KES", subscription_details=None, account_number=None):
+    return _service.submit_order(user_email, amount, currency, subscription_details=subscription_details, account_number=account_number)
 
 def get_transaction_status(tracking_id):
     return _service.get_transaction_status(tracking_id)
