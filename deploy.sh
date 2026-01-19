@@ -26,14 +26,18 @@ ssh $SERVER << 'ENDSSH'
     echo "📥 Pulling latest changes from GitHub..."
     git pull origin main
     
+    echo "🔧 Initializing data files (preserves existing data)..."
+    chmod +x init-data-files.sh
+    ./init-data-files.sh
+    
     echo "🐳 Stopping containers..."
-    docker-compose down
+    docker compose down
     
     echo "🔨 Rebuilding Docker images..."
-    docker-compose build --no-cache
+    docker compose build --no-cache
     
     echo "🚀 Starting containers..."
-    docker-compose up -d
+    docker compose up -d
     
     echo "🧹 Cleaning up unused images..."
     docker image prune -f
@@ -41,7 +45,7 @@ ssh $SERVER << 'ENDSSH'
     echo "✅ Deployment complete!"
     echo ""
     echo "📊 Container status:"
-    docker-compose ps
+    docker compose ps
 ENDSSH
 
 echo ""

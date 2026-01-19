@@ -7,7 +7,11 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - .:/app
+      - data:/app/data
+      - ./server/users_db.json:/app/server/users_db.json
+      - ./users_db.json:/app/users_db.json
+      - ./mock_db.json:/app/mock_db.json
+      - ./execution/analyzed_posts.json:/app/execution/analyzed_posts.json
     env_file:
       - .env
     environment:
@@ -31,3 +35,6 @@ services:
     restart: always
     volumes:
       - ./client/waitlist.csv:/app/waitlist.csv
+
+volumes:
+  data:

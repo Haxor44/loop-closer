@@ -1,0 +1,45 @@
+# Node modules
+node_modules
+client/node_modules
+**/node_modules
+
+# Python virtual environment
+venv
+server/venv
+**/__pycache__
+*.pyc
+
+# Data files (will be mounted as volumes)
+users_db.json
+server/users_db.json
+mock_db.json
+execution/analyzed_posts.json
+client/waitlist.csv
+
+# Environment files
+.env
+.env.local
+client/.env.local
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Build artifacts
+client/.next
+client/out
+dist
+build
