@@ -2,55 +2,56 @@
 
 const plans = [
     {
-        name: "Lite",
-        tagline: "For Vibe Coders",
-        price: "Free",
-        period: "",
-        description: "Self-hosted. Perfect for indie hackers and side projects.",
+        name: "Free",
+        tagline: "For Starters",
+        price: "$0",
+        period: "/month",
+        description: "Perfect for testing the waters.",
         features: [
-            "Local Dashboard (Streamlit)",
-            "SQLite Database",
-            "Reddit + Instagram Scraping",
+            "1 Global Keyword",
+            "1 Subreddit",
             "Manual Ticket Management",
-            "Self-Hosted Only",
+            "Basic Dashboard",
+            "Community Support",
         ],
-        cta: "Join Waitlist",
+        cta: "Get Started",
         highlighted: false,
+        href: "/auth/signin"
     },
     {
         name: "Pro",
-        tagline: "For Teams",
-        price: "$99",
-        period: "/month",
-        description: "Enterprise-grade with n8n integration.",
-        features: [
-            "Everything in Lite",
-            "n8n Workflow Integration",
-            "Jira / Linear Sync",
-            "Slack Notifications",
-            "AI Reply Generation",
-            "Dedicated Support",
-            "SLA Guarantee",
-        ],
-        cta: "Reserve Spot",
-        highlighted: false,
-    },
-    {
-        name: "Cloud",
-        tagline: "SaaS Lite",
+        tagline: "For Builders",
         price: "$29",
         period: "/month",
-        description: "Fully managed. We host the dashboard for you.",
+        description: "Unlock full monitoring power.",
         features: [
-            "Everything in Lite",
-            "Cloud-Hosted Dashboard",
-            "No Setup Required",
-            "Multi-User Support",
-            "Custom Branding",
-            "Priority Email Support",
+            "Unlimited Keywords",
+            "Unlimited Subreddits",
+            "AI Sarcasm Detection",
+            "Urgency Analysis",
+            "Priority Support",
+            "Remove Branding"
         ],
-        cta: "Get Early Access",
+        cta: "Go Pro",
         highlighted: true,
+        href: "/auth/signin"
+    },
+    {
+        name: "Teams",
+        tagline: "For Scale",
+        price: "Coming Soon",
+        period: "",
+        description: "Enterprise integrations.",
+        features: [
+            "Jira Sync (Coming Soon)",
+            "Linear Integration",
+            "Slack Alerts",
+            "SSO Authentication",
+            "Dedicated Manager",
+        ],
+        cta: "Join Waitlist",
+        highlighted: false,
+        href: "#"
     },
 ];
 
@@ -105,7 +106,7 @@ export default function Pricing() {
                             </ul>
 
                             <a
-                                href="#waitlist"
+                                href={plan.href}
                                 className={`w-full py-3 px-6 rounded-xl font-semibold text-center transition-all duration-300 ${plan.highlighted
                                     ? "bg-primary hover:bg-primary-hover text-white shadow-lg shadow-primary/25"
                                     : "bg-secondary hover:bg-card border border-border"

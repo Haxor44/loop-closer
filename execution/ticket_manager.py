@@ -16,12 +16,16 @@ def save_db(db):
     with open(DB_FILE, "w") as f:
         json.dump(db, indent=2, fp=f)
 
-def find_similar_ticket(text):
+def find_similar_ticket(text, owner_email=None):
     db = load_db()
     best_match = None
     highest_ratio = 0.0
     
     for ticket in db["tickets"]:
+        # Context Check: Only match tickets belonging to the same owner (SaaS User)
+        if owner_email and ticket.get("owner") != owner_email:
+            continue
+
         ratio = difflib.SequenceMatcher(None, ticket["summary"], text).ratio()
         if ratio > 0.6: # loose threshold for demo
             if ratio > highest_ratio:
@@ -33,7 +37,7 @@ def find_similar_ticket(text):
         return best_match["id"]
     return None
 
-def create_ticket(summary, user):
+def create_ticket(summary, user, owner_email=None):
     db = load_db()
     new_id = f"TICKET-{len(db['tickets']) + 101}"
     new_ticket = {
@@ -43,8 +47,14 @@ def create_ticket(summary, user):
         "type": classify_ticket(summary),
         "linked_users": [user],
         "created_at": time.time(),
-        "notified": False
+        "notified": False,
+        "owner": owner_email 
     }
+    
+    db["tickets"].append(new_ticket)
+    save_db(db)
+    print(f"Created new ticket: {new_id} (Owner: {owner_email})")
+    return new_id
 
 def classify_ticket(text):
     text = text.lower()
@@ -53,10 +63,6 @@ def classify_ticket(text):
     if any(k in text for k in ["feature", "add", "can you", "suggest"]):
         return "FEATURE"
     return "QUESTION"
-    db["tickets"].append(new_ticket)
-    save_db(db)
-    print(f"Created new ticket: {new_id}")
-    return new_id
 
 def link_user(ticket_id, user):
     db = load_db()

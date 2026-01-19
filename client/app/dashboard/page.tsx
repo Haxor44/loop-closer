@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import Sidebar from "../../components/Dashboard/Sidebar";
 import TicketTable from "../../components/Dashboard/TicketTable";
 
@@ -8,12 +10,22 @@ export default function DashboardPage() {
     const [tickets, setTickets] = useState<any[]>([]);
     const [stats, setStats] = useState({ total: 0, open: 0, done: 0 });
     const [loading, setLoading] = useState(true);
+    const { data: session, status } = useSession();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (status === "unauthenticated") {
+            router.push("/");
+        }
+    }, [status, router]);
 
     const fetchData = async () => {
+        if (!session?.user?.email) return;
+
         try {
             const [ticketsRes, statsRes] = await Promise.all([
-                fetch("http://localhost:8000/api/tickets"),
-                fetch("http://localhost:8000/api/stats")
+                fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/tickets?email=${session.user.email}`),
+                fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/stats?email=${session.user.email}`)
             ]);
 
             const ticketsData = await ticketsRes.json();
@@ -29,11 +41,21 @@ export default function DashboardPage() {
     };
 
     useEffect(() => {
-        fetchData();
-    }, []);
+        if (session?.user?.email) {
+            fetchData();
+        }
+    }, [session]);
+
+    if (status === "loading") {
+        return <div className="flex h-screen items-center justify-center">Loading...</div>;
+    }
+
+    if (status === "unauthenticated") {
+        return null; // Will redirect
+    }
 
     return (
-        <div className="flex h-screen bg-background text-foreground overflow-hidden">
+        <div className="flex flex-col md:flex-row h-screen bg-background text-foreground overflow-hidden">
             <Sidebar />
             <main className="flex-1 overflow-y-auto p-8 pt-12">
                 <div className="max-w-6xl mx-auto">

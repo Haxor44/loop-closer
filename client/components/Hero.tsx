@@ -32,10 +32,10 @@ export default function Hero() {
                 {/* CTA Buttons */}
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                     <a
-                        href="#waitlist"
+                        href="/auth/signin"
                         className="px-8 py-4 bg-primary hover:bg-primary-hover text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg shadow-primary/25"
                     >
-                        Join the Waitlist
+                        Get Started
                     </a>
                     <a
                         href="#features"

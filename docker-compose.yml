@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   backend:
     build:
@@ -10,8 +8,12 @@ services:
       - "8000:8000"
     volumes:
       - .:/app
+    env_file:
+      - .env
     environment:
       - PYTHONPATH=/app/execution
+      - FRONTEND_URL=https://theloopcloser.com
+      - PESAPAL_CALLBACK_URL=https://api.theloopcloser.com/api/payment/callback
     restart: always
 
   app:
@@ -25,7 +27,7 @@ services:
       - ./client/.env.local
     environment:
       - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_API_URL=https://api.theloopcloser.com
     restart: always
     volumes:
       - ./client/waitlist.csv:/app/waitlist.csv

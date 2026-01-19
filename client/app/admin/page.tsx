@@ -12,14 +12,17 @@ export default function AdminPage() {
     const [loading, setLoading] = useState(true);
 
     // Hardcoded Admin Check for MVP
-    const ADMIN_EMAIL = "admin@theloopcloser.com"; // Change to your email
+    const ADMIN_EMAIL = "evolmalek04@gmail.com";
 
     useEffect(() => {
         if (status === "unauthenticated") {
             router.push("/api/auth/signin");
         } else if (session) {
-            // FOR DEMO: Allowing all users. In prod, uncomment below:
-            // if (session.user.email !== ADMIN_EMAIL) router.push("/dashboard");
+            // Strict Admin Check
+            if (session.user?.email !== ADMIN_EMAIL) {
+                router.push("/dashboard");
+                return;
+            }
             fetchUsers();
         }
     }, [session, status]);
@@ -33,6 +36,32 @@ export default function AdminPage() {
             console.error(e);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const calculateRevenue = () => {
+        let total = 0;
+        users.forEach(u => {
+            if (u.plan === 'Pro') total += 29;
+            if (u.plan === 'Teams') total += 99; // Teams plan placeholder
+        });
+        return total;
+    };
+
+    const [selectedUser, setSelectedUser] = useState<any>(null);
+
+    const handlePlanChange = async (email: string, newPlan: string) => {
+        try {
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${email}/plan`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ plan: newPlan })
+            });
+            // Refund/Update local state
+            setUsers(users.map(u => u.email === email ? { ...u, plan: newPlan } : u));
+            setSelectedUser(null);
+        } catch (e) {
+            alert("Failed to update plan");
         }
     };
 
@@ -59,7 +88,7 @@ export default function AdminPage() {
                         </div>
                         <div className="glass-card p-6 border-primary/10">
                             <p className="text-sm text-muted">Total Revenue (Est)</p>
-                            <p className="text-3xl font-bold text-green-400">$0</p>
+                            <p className="text-3xl font-bold text-green-400">${calculateRevenue()}</p>
                         </div>
                     </div>
 
@@ -88,7 +117,11 @@ export default function AdminPage() {
                                         </td>
                                         <td className="px-6 py-4 text-muted text-sm">{new Date(user.joined_at * 1000).toLocaleDateString()}</td>
                                         <td className="px-6 py-4">
-                                            <button className="text-xs text-primary hover:text-primary/80">Manage</button>
+                                            <button
+                                                onClick={() => setSelectedUser(user)}
+                                                className="text-xs text-primary hover:text-primary/80">
+                                                Manage
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}
@@ -101,6 +134,43 @@ export default function AdminPage() {
                         </table>
                     </div>
                 </div>
+
+                {/* Manage User Modal */}
+                {selectedUser && (
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+                        <div className="bg-[#111] border border-white/10 p-6 rounded-xl w-full max-w-md shadow-2xl">
+                            <h2 className="text-xl font-bold mb-4">Manage User: {selectedUser.name}</h2>
+                            <p className="text-sm text-muted mb-6">Change subscription plan manually.</p>
+
+                            <div className="space-y-3">
+                                <button
+                                    onClick={() => handlePlanChange(selectedUser.email, 'Free')}
+                                    className="w-full p-3 text-left rounded bg-secondary/20 hover:bg-secondary/40 border border-white/5 flex justify-between">
+                                    <span>Free Plan</span>
+                                    {selectedUser.plan === 'Free' && <span>✅</span>}
+                                </button>
+                                <button
+                                    onClick={() => handlePlanChange(selectedUser.email, 'Pro')}
+                                    className="w-full p-3 text-left rounded bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 flex justify-between">
+                                    <span>Pro Plan ($29)</span>
+                                    {selectedUser.plan === 'Pro' && <span>✅</span>}
+                                </button>
+                                <button
+                                    onClick={() => handlePlanChange(selectedUser.email, 'Teams')}
+                                    className="w-full p-3 text-left rounded bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 text-purple-400 flex justify-between">
+                                    <span>Teams Plan (Coming Soon)</span>
+                                    {selectedUser.plan === 'Teams' && <span>✅</span>}
+                                </button>
+                            </div>
+
+                            <button
+                                onClick={() => setSelectedUser(null)}
+                                className="mt-6 w-full py-2 text-sm text-muted hover:text-white">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                )}
             </main>
         </div>
     );

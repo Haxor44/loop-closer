@@ -49,7 +49,7 @@ def get_api_key():
     return GEMINI_API_KEY
 
 
-def analyze_post(content: str, platform: str = "unknown", user_handle: str = "unknown") -> dict:
+def analyze_post(content: str, platform: str = "unknown", user_handle: str = "unknown", product_name: str = None, brand_voice: str = None) -> dict:
     """
     Analyzes a social media post using Gemini.
     
@@ -69,8 +69,26 @@ def analyze_post(content: str, platform: str = "unknown", user_handle: str = "un
     if not api_key:
         raise ValueError("GEMINI_API_KEY not found in environment or .env")
     
-    prompt = f"""Analyze this social media post and respond with ONLY a valid JSON object (no markdown, no code blocks, just the JSON).
+    # Construct Contextual Prompt
+    context_instruction = ""
+    if product_name:
+        context_instruction = f"""
+    CONTEXT CHECK:
+    The user is interested in the product "{product_name}".
+    If this post is NOT about "{product_name}" (or related industry/competitors), return strict JSON with "ticket_type": "IRRELEVANT" and "summary": "Irrelevant post".
+    """
+    
+    voice_instruction = ""
+    if brand_voice:
+        voice_instruction = f"""
+    BRAND VOICE:
+    Adopt the following persona for the 'suggested_response':
+    "{brand_voice}"
+    """
 
+    prompt = f"""Analyze this social media post and respond with ONLY a valid JSON object.
+{context_instruction}
+    
 POST:
 Platform: {platform}
 User: {user_handle}
@@ -81,10 +99,10 @@ Analyze for:
 2. Sarcasm: Is the user being sarcastic? (true/false)
 3. Intent: What does the user want? (complaint, question, praise, feature_request, general)
 4. Urgency: How urgent is this? (high, medium, low)
-5. Ticket Type: What type of support ticket is this? (BUG, FEATURE, QUESTION)
-6. Summary: A brief 1-sentence summary for a support ticket
-7. Suggested Response: Draft a helpful, empathetic response (keep brand voice friendly but professional)
-8. Confidence: How confident are you in this analysis? (0.0 to 1.0)
+5. Ticket Type: What type of support ticket is this? (BUG, FEATURE, QUESTION, IRRELEVANT)
+6. Summary: A brief 1-sentence summary
+7. Suggested Response: Draft a helpful response.{voice_instruction}
+8. Confidence: [0.0-1.0]
 
 Respond with this exact JSON structure:
 {{"sentiment": "...", "sarcasm": true/false, "intent": "...", "urgency": "...", "ticket_type": "...", "summary": "...", "suggested_response": "...", "confidence": 0.0}}"""
@@ -245,3 +263,47 @@ if __name__ == "__main__":
             print(f"  Type: {result['ticket_type']}")
             print(f"  Confidence: {result['confidence']}")
             print()
+
+def generate_reply(content: str, tone: str = "Specific", context: str = None) -> dict:
+    """
+    Generates a reply for a social media post using Gemini.
+    """
+    api_key = get_api_key()
+    if not api_key:
+        return {"reply": "Error: API Key missing", "error": True}
+    
+    prompt = f"""You are a customer service agent for a brand.
+POST CONTENT: "{content}"
+
+INSTRUCTIONS:
+1. Generate a reply in a "{tone}" tone.
+2. {f"Context details: {context}" if context else "Keep it helpful and concise."}
+3. The reply should be ready to send (no quotes, no "Here is a reply:", just the text).
+4. Keep it under 280 characters if possible, unless the complexity requires more.
+
+REPLY:"""
+
+    url = f"{GEMINI_API_URL}/{GEMINI_MODEL}:generateContent?key={api_key}"
+    
+    payload = {
+        "contents": [{
+            "parts": [{"text": prompt}]
+        }],
+        "generationConfig": {
+            "temperature": 0.7,
+            "maxOutputTokens": 300,
+        }
+    }
+    
+    try:
+        response = requests.post(url, json=payload, headers={"Content-Type": "application/json"})
+        if response.status_code != 200:
+            return {"reply": "Failed to generate reply.", "error": True}
+        
+        data = response.json()
+        reply_text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
+        return {"reply": reply_text, "error": False}
+        
+    except Exception as e:
+        print(f"Gemini Reply Error: {e}")
+        return {"reply": "Failed to generate reply due to error.", "error": True}

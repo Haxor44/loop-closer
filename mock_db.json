@@ -27,7 +27,7 @@
     {
       "id": "TICKET-103",
       "summary": "App crashes on login - third time this week!",
-      "status": "OPEN",
+      "status": "DONE",
       "type": "BUG",
       "urgency": "high",
       "linked_users": [
@@ -59,6 +59,114 @@
       ],
       "created_at": 1768224908.6848078,
       "notified": false
+    },
+    {
+      "id": "TICKET-106",
+      "summary": "A company is hiring a Frontend Developer with React and Next.js experience for a Strapi project, offering part-time or long-term support with a pay rate of $15-30 per hour.",
+      "status": "OPEN",
+      "type": "QUESTION",
+      "linked_users": [
+        "u/unknown"
+      ],
+      "created_at": 1768322474.6595764,
+      "notified": false,
+      "owner": "test@example.com"
+    },
+    {
+      "id": "TICKET-107",
+      "summary": "The user suspects she is pregnant, her ex-partner is not responding, and she is seeking advice on what to do.",
+      "status": "OPEN",
+      "type": "QUESTION",
+      "linked_users": [
+        "u/unknown"
+      ],
+      "created_at": 1768322474.6622148,
+      "notified": false,
+      "owner": "test@example.com"
+    },
+    {
+      "id": "TICKET-108",
+      "summary": "The user is announcing they are pregnant.",
+      "status": "OPEN",
+      "type": "QUESTION",
+      "linked_users": [
+        "u/unknown"
+      ],
+      "created_at": 1768322474.66471,
+      "notified": false,
+      "owner": "test@example.com"
+    },
+    {
+      "id": "TICKET-109",
+      "summary": "This is an automated post from a bot outlining the rules for recruiters posting job offers in several subreddits, limiting them to one consolidated post per day.",
+      "status": "OPEN",
+      "type": "QUESTION",
+      "linked_users": [
+        "u/unknown"
+      ],
+      "created_at": 1768322474.6698377,
+      "notified": false,
+      "owner": "test@example.com"
+    },
+    {
+      "id": "TICKET-110",
+      "summary": "The user is sharing their prostate cancer diagnosis and pathology results, questioning how certain findings impact risk assessment models.",
+      "status": "OPEN",
+      "type": "QUESTION",
+      "linked_users": [
+        "u/unknown"
+      ],
+      "created_at": 1768322474.6775022,
+      "notified": false,
+      "owner": "test@example.com"
+    },
+    {
+      "id": "TICKET-111",
+      "summary": "The user is advertising a work-from-home opportunity promising freedom and good income.",
+      "status": "OPEN",
+      "type": "QUESTION",
+      "linked_users": [
+        "u/unknown"
+      ],
+      "created_at": 1768322528.6837668,
+      "notified": false,
+      "owner": "ryanmalek60@gmail.com"
+    },
+    {
+      "id": "TICKET-112",
+      "summary": "The user shares advice on gaining initial traction for a platform using Reddit, Product Hunt, and MentionDesk, emphasizing visual learning and AI visibility.",
+      "status": "OPEN",
+      "type": "QUESTION",
+      "linked_users": [
+        "u/unknown"
+      ],
+      "created_at": 1768322528.6866949,
+      "notified": false,
+      "owner": "ryanmalek60@gmail.com"
+    },
+    {
+      "id": "TICKET-113",
+      "summary": "The user shares a positive experience using a tool called ParseStream to identify high-quality leads by monitoring relevant keywords on Reddit and Quora.",
+      "status": "OPEN",
+      "type": "QUESTION",
+      "linked_users": [
+        "u/unknown"
+      ],
+      "created_at": 1768322596.2573223,
+      "notified": false,
+      "owner": "evolmalek04@gmail.com"
+    },
+    {
+      "id": "TICKET-114",
+      "summary": "The user shares tips for gaining initial traction and improving visibility for a platform.",
+      "status": "OPEN",
+      "type": "QUESTION",
+      "linked_users": [
+        "u/unknown"
+      ],
+      "created_at": 1768322596.2603934,
+      "notified": false,
+      "owner": "evolmalek04@gmail.com"
     }
   ]
 }

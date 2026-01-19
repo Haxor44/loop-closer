@@ -16,6 +16,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "The Loop Closer | AI-Powered Customer Feedback Agent",
   description: "Automatically close the loop on customer feedback. From social media to resolution notification.",
+  icons: {
+    icon: "/favicon.png",
+  },
 };
 
 export default function RootLayout({

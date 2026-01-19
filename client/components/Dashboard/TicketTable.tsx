@@ -1,6 +1,8 @@
 "use client";
 
 import StatusBadge from "./StatusBadge";
+import { useState } from "react";
+import ReplyModal from "./ReplyModal";
 
 interface Ticket {
     id: string;
@@ -29,11 +31,13 @@ const UrgencyBadge = ({ urgency }: { urgency?: string }) => {
 };
 
 export default function TicketTable({ tickets, refresh }: { tickets: Ticket[], refresh: () => void }) {
+    const [selectedTicket, setSelectedTicket] = useState<{ id: string, content: string } | null>(null);
+
     const handleStatusUpdate = async (id: string, currentStatus: string) => {
         const nextStatus = currentStatus === "OPEN" ? "IN_PROGRESS" : currentStatus === "IN_PROGRESS" ? "DONE" : "OPEN";
 
         try {
-            const res = await fetch(`http://localhost:8000/api/tickets/${id}`, {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/tickets/${id}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ status: nextStatus })
@@ -79,7 +83,7 @@ export default function TicketTable({ tickets, refresh }: { tickets: Ticket[], r
                         <tr key={ticket.id} className={`hover:bg-secondary/20 transition-colors group ${ticket.urgency === 'high' ? 'bg-red-500/5' : ''}`}>
                             <td className="px-6 py-4 font-mono text-xs text-primary">{ticket.id}</td>
                             <td className="px-6 py-4 max-w-md">
-                                <p className="truncate font-medium">{ticket.summary}</p>
+                                <p className="font-medium whitespace-normal break-words">{ticket.summary}</p>
                                 <p className="text-xs text-muted">Created {new Date(ticket.created_at * 1000).toLocaleDateString()}</p>
                             </td>
                             <td className="px-6 py-4">
@@ -106,11 +110,26 @@ export default function TicketTable({ tickets, refresh }: { tickets: Ticket[], r
                                 >
                                     Cycle Status
                                 </button>
+                                <button
+                                    onClick={() => setSelectedTicket({ id: ticket.id, content: ticket.summary })}
+                                    className="ml-2 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-md text-xs transition-all"
+                                >
+                                    Reply
+                                </button>
                             </td>
                         </tr>
                     ))}
                 </tbody>
             </table>
+
+            {selectedTicket && (
+                <ReplyModal
+                    isOpen={!!selectedTicket}
+                    onClose={() => setSelectedTicket(null)}
+                    ticketId={selectedTicket.id}
+                    ticketContent={selectedTicket.content}
+                />
+            )}
         </div>
     );
 }
