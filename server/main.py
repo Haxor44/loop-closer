@@ -309,6 +309,10 @@ def upgrade_user(req: UpgradeRequest, db: Session = Depends(get_db)):
     if not order:
         raise HTTPException(status_code=500, detail="Failed to create payment order")
     
+    # Validate order has required fields
+    if not order.get("order_tracking_id") or not order.get("merchant_reference"):
+        raise HTTPException(status_code=500, detail=f"Invalid order response: {order}")
+    
     # 3. Save Pending Transaction
     new_tx = TransactionModel(
         tracking_id=order["order_tracking_id"],
