@@ -35,12 +35,21 @@ app.add_middleware(
         "https://www.theloopcloser.com",
         "https://api.theloopcloser.com"
     ],
+    allow_origin_regex="https://.*\\.theloopcloser\\.com",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],
     max_age=3600,
 )
+
+@app.middleware("http")
+async def log_origin(request, call_next):
+    origin = request.headers.get("origin")
+    if origin:
+        print(f"DEBUG: Request Origin: {origin}")
+    response = await call_next(request)
+    return response
 
 # --- Pydantic Models for Requests ---
 class UserDTO(BaseModel):
