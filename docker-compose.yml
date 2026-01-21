@@ -24,7 +24,7 @@ services:
       dockerfile: ./server/Dockerfile
     container_name: loop-closer-backend
     ports:
-      - "8001:8000"
+      - "8000:8000"
     volumes:
       - data:/app/data
       - ./server/users_db.json:/app/server/users_db.json
@@ -37,8 +37,8 @@ services:
       - .env
     environment:
       - PYTHONPATH=/app/execution
-      - FRONTEND_URL=http://localhost:3000
-      - PESAPAL_CALLBACK_URL=http://localhost:8001/api/payment/callback
+      - FRONTEND_URL=https://theloopcloser.com
+      - PESAPAL_CALLBACK_URL=https://api.theloopcloser.com/api/payment/callback
       - DATABASE_URL=postgresql://user:password@db:5432/loopcloser
     restart: always
 
@@ -52,7 +52,7 @@ services:
     env_file:
       - ./client/.env.local
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8001
+      - NEXT_PUBLIC_API_URL=https://api.theloopcloser.com
     depends_on:
       - backend
     restart: always
