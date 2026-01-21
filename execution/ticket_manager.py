@@ -1,60 +1,44 @@
 import argparse
 import json
 import os
+import sys
 import time
 import difflib
 
-DB_FILE = "mock_db.json"
+# Add parent directory to path to import from server
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-def load_db():
-    if not os.path.exists(DB_FILE):
-        return {"tickets": []}
-    with open(DB_FILE, "r") as f:
-        return json.load(f)
+from server.database import SessionLocal
+from server.models import Ticket
 
-def save_db(db):
-    with open(DB_FILE, "w") as f:
-        json.dump(db, indent=2, fp=f)
+def get_db():
+    return SessionLocal()
 
 def find_similar_ticket(text, owner_email=None):
-    db = load_db()
-    best_match = None
-    highest_ratio = 0.0
-    
-    for ticket in db["tickets"]:
-        # Context Check: Only match tickets belonging to the same owner (SaaS User)
-        if owner_email and ticket.get("owner") != owner_email:
-            continue
-
-        ratio = difflib.SequenceMatcher(None, ticket["summary"], text).ratio()
-        if ratio > 0.6: # loose threshold for demo
-            if ratio > highest_ratio:
-                highest_ratio = ratio
-                best_match = ticket
-    
-    if best_match:
-        print(f"Found existing ticket: {best_match['id']} (Match: {int(highest_ratio*100)}%)")
-        return best_match["id"]
-    return None
-
-def create_ticket(summary, user, owner_email=None):
-    db = load_db()
-    new_id = f"TICKET-{len(db['tickets']) + 101}"
-    new_ticket = {
-        "id": new_id,
-        "summary": summary,
-        "status": "OPEN",
-        "type": classify_ticket(summary),
-        "linked_users": [user],
-        "created_at": time.time(),
-        "notified": False,
-        "owner": owner_email 
-    }
-    
-    db["tickets"].append(new_ticket)
-    save_db(db)
-    print(f"Created new ticket: {new_id} (Owner: {owner_email})")
-    return new_id
+    db = get_db()
+    try:
+        query = db.query(Ticket)
+        if owner_email:
+            query = query.filter(Ticket.owner == owner_email)
+            
+        tickets = query.all()
+        
+        best_match = None
+        highest_ratio = 0.0
+        
+        for ticket in tickets:
+            ratio = difflib.SequenceMatcher(None, ticket.summary, text).ratio()
+            if ratio > 0.6: # loose threshold for demo
+                if ratio > highest_ratio:
+                    highest_ratio = ratio
+                    best_match = ticket
+        
+        if best_match:
+            print(f"Found existing ticket: {best_match.id} (Match: {int(highest_ratio*100)}%)")
+            return best_match.id
+        return None
+    finally:
+        db.close()
 
 def classify_ticket(text):
     text = text.lower()
@@ -64,49 +48,112 @@ def classify_ticket(text):
         return "FEATURE"
     return "QUESTION"
 
+def create_ticket(summary, user, owner_email=None, source_id=None):
+    db = get_db()
+    try:
+        # Generate ID - simpler to use UUID or just count? 
+        # For consistency with migration, we'll use TICKET-count logic or UUID.
+        # DB Auto-increment? ID is string "TICKET-XXX".
+        # Let's count existing.
+        count = db.query(Ticket).count()
+        new_id = f"TICKET-{count + 101 + int(time.time() % 1000)}" # Randomize slightly to avoid collision in simple counter
+        
+        new_ticket = Ticket(
+            id=new_id,
+            source_id=source_id,
+            summary=summary,
+            status="OPEN",
+            type=classify_ticket(summary),
+            urgency="low",
+            linked_users=[user],
+            created_at=time.time(),
+            notified=False,
+            owner=owner_email
+        )
+        
+        db.add(new_ticket)
+        db.commit()
+        print(f"Created new ticket: {new_id} (Owner: {owner_email})")
+        return new_id
+    except Exception as e:
+        db.rollback()
+        print(f"Error creating ticket: {e}")
+        return None
+    finally:
+        db.close()
+
 def link_user(ticket_id, user):
-    db = load_db()
-    for ticket in db["tickets"]:
-        if ticket["id"] == ticket_id:
-            if user not in ticket["linked_users"]:
-                ticket["linked_users"].append(user)
-                save_db(db)
+    db = get_db()
+    try:
+        ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
+        if ticket:
+            # Check if user in linked_users
+            # generic array append
+            if user not in ticket.linked_users:
+                # SQLAlchemy MutableList need explicit flagging or reassignment
+                # Easier to fetch, append, reassign
+                current_users = list(ticket.linked_users)
+                current_users.append(user)
+                ticket.linked_users = current_users
+                db.commit()
                 print(f"Linked {user} to {ticket_id}")
             else:
                 print(f"User {user} already linked to {ticket_id}")
-            return
-    print("Ticket not found")
+        else:
+            print("Ticket not found")
+    finally:
+        db.close()
 
 def get_resolved_tickets():
-    db = load_db()
-    resolved = []
-    for ticket in db["tickets"]:
-        if ticket["status"] == "DONE" and not ticket.get("notified", False):
-            resolved.append(ticket)
-    print(json.dumps(resolved, indent=2))
+    db = get_db()
+    try:
+        tickets = db.query(Ticket).filter(Ticket.status == "DONE", Ticket.notified == False).all()
+        # Convert to dict for JSON output
+        result = []
+        for t in tickets:
+            result.append({
+                "id": t.id,
+                "summary": t.summary,
+                "status": t.status,
+                "owner": t.owner
+            })
+        print(json.dumps(result, indent=2))
+    finally:
+        db.close()
 
 def mark_done(ticket_id):
     """Helper to simulate work being done"""
-    db = load_db()
-    found = False
-    for ticket in db["tickets"]:
-        if ticket["id"] == ticket_id:
-            ticket["status"] = "DONE"
-            found = True
-            break
-    if found:
-        save_db(db)
-        print(f"Marked {ticket_id} as DONE")
-    else:
-        print("Ticket not found")
+    db = get_db()
+    try:
+        ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
+        if ticket:
+            ticket.status = "DONE"
+            db.commit()
+            print(f"Marked {ticket_id} as DONE")
+        else:
+            print("Ticket not found")
+    finally:
+        db.close()
 
 def mark_notified(ticket_id):
-    db = load_db()
-    for ticket in db["tickets"]:
-        if ticket["id"] == ticket_id:
-            ticket["notified"] = True
-            save_db(db)
-            return
+    db = get_db()
+    try:
+        ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
+        if ticket:
+            ticket.notified = True
+            db.commit()
+    finally:
+        db.close()
+
+# Stub for load_db/save_db to keep compatibility if other modules import them
+# but they shouldn't run logic anymore.
+def load_db():
+    print("WARNING: load_db() is deprecated, use DB connection")
+    return {"tickets": []}
+
+def save_db(db):
+    print("WARNING: save_db() is deprecated, use DB connection")
+    pass
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

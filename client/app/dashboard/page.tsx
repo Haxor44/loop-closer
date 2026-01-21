@@ -51,6 +51,15 @@ export default function DashboardPage() {
     useEffect(() => {
         if (session?.user?.email) {
             fetchData();
+
+            // Fire Google Ads Conversion Event
+            if (typeof window !== "undefined" && (window as any).gtag) {
+                (window as any).gtag("event", "conversion", {
+                    "send_to": "AW-XXXXXXXXX/YYYYYYYYYY", // Placeholder for actual Conversion ID/Label
+                    "value": 1.0,
+                    "currency": "USD"
+                });
+            }
         }
     }, [session]);
 

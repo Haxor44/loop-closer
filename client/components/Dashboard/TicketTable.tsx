@@ -104,18 +104,20 @@ export default function TicketTable({ tickets, refresh, brandVoice }: { tickets:
                                 <StatusBadge status={ticket.status} />
                             </td>
                             <td className="px-6 py-4 text-right">
-                                <button
-                                    onClick={() => handleStatusUpdate(ticket.id, ticket.status)}
-                                    className="px-3 py-1.5 bg-secondary hover:bg-primary/20 hover:text-primary border border-border rounded-md text-xs transition-all"
-                                >
-                                    Cycle Status
-                                </button>
-                                <button
-                                    onClick={() => setSelectedTicket({ id: ticket.id, content: ticket.summary })}
-                                    className="ml-2 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-md text-xs transition-all"
-                                >
-                                    Reply
-                                </button>
+                                <div className="flex justify-end items-center gap-2">
+                                    <button
+                                        onClick={() => setSelectedTicket({ id: ticket.id, content: ticket.summary })}
+                                        className="px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg text-sm font-medium transition-all shadow-sm active:scale-95 whitespace-nowrap"
+                                    >
+                                        Reply
+                                    </button>
+                                    <button
+                                        onClick={() => handleStatusUpdate(ticket.id, ticket.status)}
+                                        className="px-3 py-2 bg-secondary hover:bg-card border border-border rounded-lg text-xs transition-all text-muted hover:text-foreground whitespace-nowrap"
+                                    >
+                                        Cycle Status
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     ))}

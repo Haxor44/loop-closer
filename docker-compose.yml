@@ -1,40 +1,58 @@
+volumes:
+  data:
+  postgres_data:
+
+
 services:
+  db:
+    image: postgres:15
+    container_name: loop-closer-db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: loopcloser
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./server/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    restart: always
+
   backend:
     build:
       context: .
       dockerfile: ./server/Dockerfile
     container_name: loop-closer-backend
     ports:
-      - "8000:8000"
+      - "8001:8000"
     volumes:
       - data:/app/data
       - ./server/users_db.json:/app/server/users_db.json
       - ./users_db.json:/app/users_db.json
       - ./mock_db.json:/app/mock_db.json
       - ./execution/analyzed_posts.json:/app/execution/analyzed_posts.json
+    depends_on:
+      - db
     env_file:
       - .env
     environment:
       - PYTHONPATH=/app/execution
-      - FRONTEND_URL=https://theloopcloser.com
-      - PESAPAL_CALLBACK_URL=https://api.theloopcloser.com/api/payment/callback
+      - FRONTEND_URL=http://localhost:3000
+      - PESAPAL_CALLBACK_URL=http://localhost:8001/api/payment/callback
+      - DATABASE_URL=postgresql://user:password@db:5432/loopcloser
     restart: always
 
-  app:
+  client:
     build:
       context: ./client
       dockerfile: Dockerfile
-    container_name: loop-closer-frontend
+    container_name: loop-closer-client
     ports:
       - "3000:3000"
     env_file:
       - ./client/.env.local
     environment:
-      - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=https://api.theloopcloser.com
+      - NEXT_PUBLIC_API_URL=http://localhost:8001
+    depends_on:
+      - backend
     restart: always
-    volumes:
-      - ./client/waitlist.csv:/app/waitlist.csv
-
-volumes:
-  data:

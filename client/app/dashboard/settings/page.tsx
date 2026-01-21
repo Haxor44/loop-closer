@@ -479,7 +479,7 @@ function SettingsContent() {
                                     />
                                     <p className="text-xs text-muted mt-1">The AI will adopt this persona when drafting suggested responses for you.</p>
                                 </div>
-                                <div className="pt-2">
+                                <div className="pt-4 border-t border-border mt-4 flex items-center justify-between">
                                     <button
                                         onClick={handleSaveConfig}
                                         disabled={isSavingConfig}
@@ -493,9 +493,40 @@ function SettingsContent() {
                                         ) : isSaved ? (
                                             <>
                                                 <span className="text-green-500">✓</span>
-                                                Saved!
+                                                Saved! (Next scan in ~1h)
                                             </>
                                         ) : "Save Configuration"}
+                                    </button>
+
+                                    <button
+                                        onClick={async () => {
+                                            if (!session?.user?.email) return;
+                                            const btn = document.getElementById("scan-now-footer-btn");
+                                            if (btn) {
+                                                btn.innerText = "Scanning...";
+                                                (btn as HTMLButtonElement).disabled = true;
+                                            }
+
+                                            try {
+                                                await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/pipeline/trigger`, {
+                                                    method: "POST",
+                                                    headers: { "Content-Type": "application/json" },
+                                                    body: JSON.stringify({ email: session.user.email })
+                                                });
+                                                setNotification({ type: "success", message: "Scan started! Check dashboard in a few moments." });
+                                            } catch (e) {
+                                                setNotification({ type: "error", message: "Failed to start scan" });
+                                            } finally {
+                                                if (btn) {
+                                                    btn.innerText = "Scan Now 🔎";
+                                                    (btn as HTMLButtonElement).disabled = false;
+                                                }
+                                            }
+                                        }}
+                                        id="scan-now-footer-btn"
+                                        className="px-4 py-2 bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors rounded-lg text-sm font-medium"
+                                    >
+                                        Scan Now 🔎
                                     </button>
                                 </div>
                             </div>
