@@ -297,11 +297,11 @@ def upgrade_user(req: UpgradeRequest, db: Session = Depends(get_db)):
         "frequency": "MONTHLY"
     }
 
-    # 2. Create Order (3,770 KES)
+    # 2. Create Order ($8.00 USD)
     order = create_pesapal_order(
         req.email, 
-        amount=3770.00, 
-        currency="KES", 
+        amount=8.00, 
+        currency="USD", 
         subscription_details=subscription_details,
         account_number=req.email
     )

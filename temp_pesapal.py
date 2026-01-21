@@ -4,6 +4,7 @@ import uuid
 import time
 import logging
 import os
+import sys
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -30,107 +31,72 @@ class PesapalService:
         self.token_expiry = 0
 
     def get_auth_token(self):
-        """
-        Get OAuth2 authentication token from Pesapal (with caching)
-        """
         if self.token and time.time() < self.token_expiry:
             return self.token
 
         url = f"{self.base_url}api/Auth/RequestToken"
-        headers = {
-            "Content-Type": "application/json",
-            "Accept": "application/json"
-        }
-        payload = {
-            "consumer_key": CONSUMER_KEY,
-            "consumer_secret": CONSUMER_SECRET
-        }
+        headers = { "Content-Type": "application/json", "Accept": "application/json" }
+        payload = { "consumer_key": CONSUMER_KEY, "consumer_secret": CONSUMER_SECRET }
 
         try:
+            print(f"DEBUG: Requesting Key from {url}", flush=True)
             response = requests.post(url, json=payload, headers=headers)
             response.raise_for_status()
             data = response.json()
             
             if "token" in data:
                 self.token = data["token"]
-                # Expires in 5 minutes less than actual expiry (usually 60m)
                 self.token_expiry = time.time() + (55 * 60) 
                 return self.token
             else:
-                logger.error(f"No token in response: {data}")
+                print(f"ERROR: No token in response: {data}", flush=True)
                 return None
         except Exception as e:
-            logger.error(f"Failed to get auth token: {str(e)}")
+            print(f"ERROR: Failed to get auth token: {str(e)}", flush=True)
+            if 'response' in locals():
+                print(f"Response Body: {response.text}", flush=True)
             return None
 
     def register_ipn(self):
-        """
-        Register the IPN URL with Pesapal
-        """
         token = self.get_auth_token()
         if not token:
             return None
 
         url = f"{self.base_url}api/URLSetup/RegisterIPN"
-        headers = {
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json"
-        }
-        payload = {
-            "url": CALLBACK_URL,
-            "ipn_notification_type": "GET" # or POST, standard is GET for v3 redirects? check docs. 
-            # Walkthrough says /api/URLSetup/RegisterIPN.
-            # Usually we register for GET (iframe redirect) or POST (backend IPN).
-            # The walkthrough callback handles both. We'll stick to POST for reliable updates.
-        }
-        
-        # NOTE: For v3, IPN registration is separate from Order submission.
-        # But `submit_order` takes a `notification_id`.
-        # So we need to register IPN and get an ID.
+        headers = { "Authorization": f"Bearer {token}", "Content-Type": "application/json" }
+        payload = { "url": CALLBACK_URL, "ipn_notification_type": "GET" }
         
         try:
-             # Check if we already have one cached/saved? 
-             # For now, let's just log it. In production, save this ID.
              response = requests.post(url, json=payload, headers=headers)
              response.raise_for_status()
              data = response.json()
+             print(f"DEBUG: IPN Registered: {data}", flush=True)
              return data.get("ipn_id")
         except Exception as e:
-            logger.error(f"Failed to register IPN: {e}")
+            print(f"ERROR: Failed to register IPN: {e}", flush=True)
+            if 'response' in locals():
+                 print(f"Response Body: {response.text}", flush=True)
             return None
 
-    def submit_order(self, user_email, amount=8.00, currency="USD", description="Subscription Upgrade", 
+    def submit_order(self, user_email, amount=3770.00, currency="KES", description="Subscription Upgrade", 
                      subscription_details=None, account_number=None):
-        """
-        Submit order to Pesapal with MANDATORY recurring payment details
-        """
-        # Validate that recurring payment details are provided
         if not subscription_details or not account_number:
-            raise ValueError("subscription_details and account_number are REQUIRED for recurring payments")
+            raise ValueError("subscription_details and account_number are REQUIRED")
         
-        # Force Mock if using dummy credentials
         if CONSUMER_KEY == "your_consumer_key_here":
-            logger.info("Using MOCK implementation due to missing credentials")
             return self.mock_submit_order(user_email, amount, currency)
 
         token = self.get_auth_token()
         if not token:
-            return None
+            raise Exception("Failed to get Auth Token") # Raise to fail fast
             
-        # Register IPN first (optimized: should be done once and stored)
         ipn_id = self.register_ipn()
         if not ipn_id:
-             # If failing, maybe proceed without IPN (not recommended) or use dummy
-             # For this implementation, we proceed.
-             logger.warning("Proceeding without IPN ID")
+             print("WARNING: Proceeding without IPN ID", flush=True)
         
         url = f"{self.base_url}api/Transactions/SubmitOrderRequest"
-        headers = {
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json"
-        }
+        headers = { "Authorization": f"Bearer {token}", "Content-Type": "application/json" }
         
-        # Unique ID
         merchant_reference = str(uuid.uuid4())
         
         payload = {
@@ -140,44 +106,35 @@ class PesapalService:
             "description": description,
             "callback_url": CALLBACK_URL,
             "notification_id": ipn_id,
-            "billing_address": {
-                "email_address": user_email,
-                "country_code": "KE",
-                # Add dummy data if needed
-            },
-            # ALWAYS include recurring payment fields (MANDATORY)
+            "billing_address": { "email_address": user_email, "country_code": "KE" },
             "account_number": account_number,
             "subscription_details": subscription_details
         }
 
         try:
-            logger.info(f"Submitting order to: {url}")
-            logger.info(f"Payload: {payload}")
+            print(f"DEBUG: Submitting order to: {url}", flush=True)
             response = requests.post(url, json=payload, headers=headers)
-            logger.info(f"Response status: {response.status_code}")
-            logger.info(f"Response body: {response.text}")
+            print(f"DEBUG: Response Status: {response.status_code}", flush=True)
+            print(f"DEBUG: Response Body: {response.text}", flush=True) # CRITICAL LOG
+            
             response.raise_for_status()
             data = response.json()
-            logger.info(f"Parsed data: {data}")
+            
+            if not data.get("order_tracking_id"):
+                print(f"CRITICAL ERROR: Pesapal returned success but no tracking_id! Data: {data}", flush=True)
+                raise Exception(f"Pesapal returned missing tracking_id. Data: {data}")
+
             return {
                 "order_tracking_id": data.get("order_tracking_id"),
                 "merchant_reference": merchant_reference,
                 "redirect_url": data.get("redirect_url") 
             }
         except Exception as e:
-            logger.error(f"Error submitting order: {type(e).__name__}: {e}")
-            logger.error(f"Response status: {response.status_code if 'response' in locals() else 'N/A'}")
-            logger.error(f"Response text: {response.text if 'response' in locals() else 'N/A'}")
-            # FALBACK FOR DEV WITHOUT CREDENTIALS
-            if CONSUMER_KEY == "your_consumer_key_here":
-                logger.info("Using MOCK implementation due to missing credentials")
-                return self.mock_submit_order(user_email, amount, currency)
-            return None
+            print(f"ERROR: Error submitting order: {e}", flush=True)
+            raise # Re-raise to crash properly
 
     def mock_submit_order(self, user_email, amount, currency):
         order_id = str(uuid.uuid4())
-        # In mock mode, we just return a success-looking structure
-        # We can link to a local mock completion page or just the settings page
         return {
             "order_tracking_id": order_id,
             "merchant_reference": order_id,
@@ -187,23 +144,19 @@ class PesapalService:
 
     def get_transaction_status(self, tracking_id):
         token = self.get_auth_token()
-        if not token: 
-            return None
-            
+        if not token: return None
         url = f"{self.base_url}api/Transactions/GetTransactionStatus?orderTrackingId={tracking_id}"
         headers = {"Authorization": f"Bearer {token}"}
-        
         try:
             response = requests.get(url, headers=headers)
             return response.json()
         except Exception as e:
-            logger.error(f"Error getting status: {e}")
+            print(f"Error getting status: {e}", flush=True)
             return None
 
-# Singleton or helper function
 _service = PesapalService()
 
-def create_pesapal_order(user_email, amount=8.00, currency="USD", subscription_details=None, account_number=None):
+def create_pesapal_order(user_email, amount=3770.00, currency="KES", subscription_details=None, account_number=None):
     return _service.submit_order(user_email, amount, currency, subscription_details=subscription_details, account_number=account_number)
 
 def get_transaction_status(tracking_id):

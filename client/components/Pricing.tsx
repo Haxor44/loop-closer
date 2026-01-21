@@ -21,7 +21,7 @@ const plans = [
     {
         name: "Pro",
         tagline: "For Builders",
-        price: "$29",
+        price: "$8",
         period: "/month",
         description: "Unlock full monitoring power.",
         features: [
