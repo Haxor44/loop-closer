@@ -151,16 +151,23 @@ class PesapalService:
         }
 
         try:
+            logger.info(f"Submitting order to: {url}")
+            logger.info(f"Payload: {payload}")
             response = requests.post(url, json=payload, headers=headers)
+            logger.info(f"Response status: {response.status_code}")
+            logger.info(f"Response body: {response.text}")
             response.raise_for_status()
             data = response.json()
+            logger.info(f"Parsed data: {data}")
             return {
                 "order_tracking_id": data.get("order_tracking_id"),
                 "merchant_reference": merchant_reference,
                 "redirect_url": data.get("redirect_url") 
             }
         except Exception as e:
-            logger.error(f"Error submitting order: {e}")
+            logger.error(f"Error submitting order: {type(e).__name__}: {e}")
+            logger.error(f"Response status: {response.status_code if 'response' in locals() else 'N/A'}")
+            logger.error(f"Response text: {response.text if 'response' in locals() else 'N/A'}")
             # FALBACK FOR DEV WITHOUT CREDENTIALS
             if CONSUMER_KEY == "your_consumer_key_here":
                 logger.info("Using MOCK implementation due to missing credentials")
